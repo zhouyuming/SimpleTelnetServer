@@ -1,5 +1,13 @@
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/types.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
+#include <sys/time.h>
 
 #include "simple_telnet_server.h"
 
@@ -49,6 +57,38 @@ void sendHelpScreen(int newsockfd)
     write(newsockfd, str3, sizeof(str3));
 }
 
+/**
+ * Method to send fake logs to docket
+*/
+void sendFakeLog(int new_socket)
+{
+  send(new_socket, FAKE_LOG, sizeof(FAKE_LOG), 0);
+}
+
+/**
+* Read file and send to socket
+*/
+void send_output_command(int newsockfd) {
+  FILE* filePointer;
+  int bufferLength = 40;
+  char *buffer = "";
+  int i, len;
+  filePointer = fopen("file.txt", "r");
+
+  while(fgets(buffer, bufferLength, filePointer)) {
+      len = strlen(buffer);
+      printf("\n%s len: %i\n", buffer, len);
+
+      for (i = 0; i < len; i++){
+        printf("%02X",buffer[i]);
+      }
+      write(newsockfd, buffer, sizeof(buffer));
+      //send(newsockfd, buffer, sizeof(buffer), 0);
+      
+  }
+  fclose(filePointer);
+}
+
 int main(int argc, char *argv[])
 {
     int i;
@@ -56,6 +96,7 @@ int main(int argc, char *argv[])
     int ret;
     int max_sd;
     int activity;
+    int valread;
     int addrlen;
     fd_set readfds;
     int opt = TRUE;
